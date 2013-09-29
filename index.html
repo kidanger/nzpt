@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Ninja Zombie Panic Teleport</title>
+    <style>
+      .emscripten { padding-right: 0; margin-left: auto; margin-right: auto; display: block; }
+      body { background: black; color: grey; }
+      textarea.emscripten { font-family: monospace; width: 80%; }
+      div.emscripten { text-align: center; }
+      div.emscripten_border { border: 1px solid black; }
+      /* the canvas *must not* have any border or padding, or mouse coords will be wrong */
+      canvas.emscripten { border: 0px none; }
+
+      progress {
+        text-align:left;
+        overflow:hidden;
+        clear:both;
+        color:#ffffff;
+        font-weight:bold;
+        width:25%;
+        height:24px;
+        margin:0;
+        padding:0;
+        background:transparent;
+      }
+      progress {
+        appearance:none;
+        -moz-appearance:none;
+        -webkit-appearance:none;
+        border:3px solid #333333;
+        background-size:auto;
+      }
+      progress::-moz-progress-bar
+      {
+        background:#3a3a3a;
+      }
+      progress::-webkit-progress-value
+      {
+        background:#3a3a3a;
+      }
+
+    </style>
+  </head>
+  <body>
+    <div class="emscripten">
+      <progress value="0" max="100" id="progress"></progress>
+    </div>
+
+    <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" ></canvas>
+
+    <!--<script src='memoryprofiler.js'></script>-->
+
+    <script type='text/javascript'>
+      // connect to canvas
+      var Module = {
+        preRun: [], // memoryprofiler_add_hooks
+        postRun: [],
+        print: function(text) {
+            console.log(text);
+        },
+        printErr: function(text) {
+            console.log(text);
+        },
+        canvas: document.getElementById('canvas'),
+        tick: function() {
+          var progress = document.getElementById('progress');
+          if (progress.hidden)
+            return;
+          progress.value += 1;
+          if (progress.value < 100) {
+            setTimeout(function() { Module.setStatus("tick") }, 150);
+          }
+        },
+        setStatus: function(text) {
+          if (Module.setStatus.interval) clearInterval(Module.setStatus.interval);
+          var progress = document.getElementById('progress');
+          console.log(text);
+          if (text != '') {
+            progress.hidden = false;
+            setTimeout(function() { Module.tick(); }, 100);
+          } else {
+            progress.hidden = true;
+          }
+        },
+        totalDependencies: 0,
+        monitorRunDependencies: function(left) {
+          this.totalDependencies = Math.max(this.totalDependencies, left);
+          Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+        }
+      };
+      Module.setStatus('Downloading...');
+    </script>
+    <script type='text/javascript'>
+        var decompressWorker = new Worker('decompress.js');
+        var decompressCallbacks = [];
+        var decompressions = 0;
+        Module["decompress"] = function(data, callback) {
+          var id = decompressCallbacks.length;
+          decompressCallbacks.push(callback);
+          decompressWorker.postMessage({ data: data, id: id });
+          if (Module['setStatus']) {
+            decompressions++;
+            Module['setStatus']('Decompressing...');
+          }
+        };
+        decompressWorker.onmessage = function(event) {
+          decompressCallbacks[event.data.id](event.data.data);
+          decompressCallbacks[event.data.id] = null;
+          if (Module['setStatus']) {
+            decompressions--;
+            if (decompressions == 0) {
+              Module['setStatus']('');
+            }
+          }
+        };
+        var compiledCodeXHR = new XMLHttpRequest();
+        compiledCodeXHR.open('GET', 'index.js.compress', true);
+        compiledCodeXHR.responseType = 'arraybuffer';
+        compiledCodeXHR.onload = function() {
+          var arrayBuffer = compiledCodeXHR.response;
+          if (!arrayBuffer) throw('Loading compressed code failed.');
+          var byteArray = new Uint8Array(arrayBuffer);
+          Module.decompress(byteArray, function(decompressed) {
+            var source = Array.prototype.slice.apply(decompressed).map(function(x) { return String.fromCharCode(x) }).join(''); // createObjectURL instead?
+            var scriptTag = document.createElement('script');
+            scriptTag.setAttribute('type', 'text/javascript');
+            scriptTag.innerHTML = source;
+            document.body.appendChild(scriptTag);
+          });
+        };
+        compiledCodeXHR.send(null);
+</script>
+  </body>
+</html>
