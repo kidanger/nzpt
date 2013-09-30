@@ -30,6 +30,7 @@ function Game:on_enter()
 
 	local l1 = Light.new(13, 12, 13, {255, 255, 255})
 	l1:associate_with(self.hero)
+	l1.bufferable = false
 	table.insert(self.lights, l1)
 
 	local l2 = Light.new(13, 18.5, 10, {150, 150, 255})

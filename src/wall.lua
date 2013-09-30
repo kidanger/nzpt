@@ -37,7 +37,7 @@ function Wall:init()
 end
 
 function Wall:draw()
-	drystal.set_color(0, 0, 0)
+	drystal.set_color(255, 0, 0)
 	local x, y = self:get_screen_position()
 	drystal.draw_rect(x, y, self.w*R, self.h*R)
 end

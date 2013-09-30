@@ -11,6 +11,9 @@ local Light = {
 	color={255, 255, 255},
 	bound_to=nil,
 	blink_freq=0,
+
+	buffer=nil,
+	bufferable=true,
 }
 Light.__index = Light
 
@@ -118,17 +121,17 @@ function Light:new_draw()
 		if parent.is_wall then
 			for i, vertex in ipairs(parent.vertices) do
 				local collides, colx, coly = physic.raycast(self.x, self.y,
-				vertex.x, vertex.y, raycast_callback)
+							vertex.x, vertex.y, raycast_callback)
 				local x, y = colx or vertex.x, coly or vertex.y
 
 				local angle = math.atan2(y - self.y, x - self.x) % (math.pi*2)
 				local distance = distanceto(x, y) / self.radius
 				local new_point = {x=x, y=y, angle=angle, distance=distance}
-				table.insert(points, new_point)
+				--table.insert(points, new_point)
 
 				if debug then
-					drystal.set_color(255, 0, 0)
-					drystal.draw_line(self.x*R, self.y*R, x*R, y*R)
+					--drystal.set_color(255, 0, 0)
+					--drystal.draw_line(self.x*R, self.y*R, x*R, y*R)
 				end
 
 				local delta = math.pi / 1000
@@ -152,7 +155,7 @@ function Light:new_draw()
 		return p1.distance < p2.distance
 	end)
 	if #points > 0 then
-		local maxdelta = math.pi / 10
+		local maxdelta = math.pi / 14
 
 		drystal.set_color(0, 0, 255)
 		local p1 = points[1]
@@ -176,19 +179,20 @@ function Light:new_draw()
 			end
 		end
 
-		for i = 1, #points - 1 do
-			local p1 = points[i]
-			local p2 = points[i + 1]
-			while p1.angle + maxdelta < p2.angle do
-				local proj = projected(p1, maxdelta)
-				table.insert(points, i + 1, proj)
-				if debug then
-					drystal.set_color(0, 255, 0)
-					drystal.draw_line(self.x*R, self.y*R, proj.x*R, proj.y*R)
+		do
+			local i = 1
+			while i < #points - 1 do
+				local p1 = points[i]
+				local p2 = points[i + 1]
+				if p1.angle + maxdelta < p2.angle then
+					local proj = projected(p1, maxdelta)
+					table.insert(points, i + 1, proj)
+					if debug then
+						drystal.set_color(0, 255, 0)
+						drystal.draw_line(self.x*R, self.y*R, proj.x*R, proj.y*R)
+					end
 				end
 				i = i + 1
-				p1 = points[i]
-				p2 = points[i % #points + 1]
 			end
 		end
 
@@ -218,16 +222,29 @@ function Light:new_draw()
 		drystal.draw_sprite_resized(sprite, self.x*R-w/2, self.y*R-h/2, w, h)
 	end
 end
-function Light:draw()
-	if self.radius == 0 then
-		return
-	end
-	drystal.set_alpha(120)
+function Light:_draw()
+	drystal.set_alpha(200)
 	drystal.set_color(self.color)
 	if OLD_LIGHT then
 		self:old_draw()
 	else
 		self:new_draw()
+	end
+end
+function Light:draw()
+	if self.radius == 0 then
+		return
+	end
+	if self.bufferable then
+		if not self.buffer then
+			self.buffer = drystal.new_buffer()
+			drystal.use_buffer(self.buffer)
+			self:_draw()
+			drystal.use_buffer()
+		end
+		drystal.draw_buffer(self.buffer)
+	else
+		self:_draw()
 	end
 end
 
