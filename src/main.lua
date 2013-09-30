@@ -12,7 +12,7 @@ function switch_state(newstate)
 end
 
 function drystal.init()
-	drystal.resize(600, 480)
+	drystal.resize(900, 780)
 	switch_state(gamestate)
 end
 

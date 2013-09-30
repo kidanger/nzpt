@@ -19,10 +19,10 @@ Game.__index = Game
 function Game:on_enter()
 	physic.create_world(0, 0)
 	self.hero = Hero.new()
-	self.hero:init(10, 10)
+	self.hero:init(9, 12)
 
-	table.insert(self.walls, Wall.new(12, 17, 5, 1):init())
-	table.insert(self.walls, Wall.new(12, 16, .3, 7):init())
+	table.insert(self.walls, Wall.new(12.6, 17, 5, 1):init())
+	table.insert(self.walls, Wall.new(12, 16, .6, 7):init())
 	table.insert(self.walls, Wall.new(9, 6, 5, 5):init())
 	-- map borders
 	table.insert(self.walls, Wall.new(0, 0, 35, 5):init())
@@ -32,7 +32,7 @@ function Game:on_enter()
 	l1:associate_with(self.hero)
 	table.insert(self.lights, l1)
 
-	local l2 = Light.new(12.5, 18.5, 10, {150, 150, 255})
+	local l2 = Light.new(13, 18.5, 10, {150, 150, 255})
 	l2.blink_freq = 2
 	table.insert(self.lights, l2)
 
@@ -94,6 +94,16 @@ function Game:key_press(key)
 		self.hero:go_down(true)
 	elseif key == 'z' then
 		self.hero:go_up(true)
+	elseif key == 'p' then
+		local r = math.random() * 255
+		local g = math.random() * 255
+		local b = math.random() * 255
+		table.insert(self.lights, Light.new(self.hero:get_x(), self.hero:get_y(),
+									math.random(4, 14), {r, g, b}):init())
+	elseif key == 'o' then
+		OLD_LIGHT = not (OLD_LIGHT or false)
+	elseif key == 'l' then
+		LIGHT_DEBUG = not (LIGHT_DEBUG or false)
 	end
 end
 function Game:key_release(key)

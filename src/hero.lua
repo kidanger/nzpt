@@ -115,6 +115,13 @@ function Hero:draw()
 	drystal.draw_sprite(sprite, x-w/2, y-h/2, transform)
 end
 
+function Hero:get_x()
+	return self.body:get_position()
+end
+function Hero:get_y()
+	local _, y = self.body:get_position()
+	return y
+end
 function Hero:get_screen_position()
 	local x, y = self.body:get_position()
 	return x * R, y * R

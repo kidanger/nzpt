@@ -44,21 +44,16 @@ function Light:update(dt)
 	end
 end
 
-function Light:old_draw()
-	if self.radius == 0 then
-		return
+local function raycast_callback(body, fraction)
+	if body.parent.is_translucent then
+		return 1, false
 	end
-	drystal.set_alpha(140)
-	drystal.set_color(self.color)
+	return fraction, true
+end
+
+function Light:old_draw()
 	local oldx, oldy, oldangle, oldd = self.x, self.y, 0, 0
 	local delta = math.pi / 50
-
-	local function raycast_callback(body, fraction)
-		if body.parent.is_translucent then
-			return 1, false
-		end
-		return fraction, true
-	end
 
 	for angle = delta, math.pi * 2+delta, delta do
 		local destx, desty =
@@ -73,14 +68,12 @@ function Light:old_draw()
 		local centerx = sprites.lightmap.x + r
 		local centery = sprites.lightmap.y + r
 		local d = math.sqrt((destx-self.x)^2 + (desty-self.y)^2) / self.radius * r
-		drystal.draw_freeshape(
+		drystal.draw_surface(
 			centerx, centery,
-			centerx+math.cos(angle)*d, centery+math.sin(angle)*d,
 			centerx+math.cos(angle)*d, centery+math.sin(angle)*d,
 			centerx+math.cos(oldangle)*oldd, centery+math.sin(oldangle)*oldd,
 
 			self.x*R, self.y*R,
-			destx*R, desty*R,
 			destx*R, desty*R,
 			oldx*R, oldy*R
 		)
@@ -88,16 +81,154 @@ function Light:old_draw()
 		oldy = desty
 		oldangle = angle
 		oldd = d
+		if LIGHT_DEBUG then
+			drystal.draw_line(self.x*R, self.y*R, destx*R, desty*R)
+		end
 	end
 end
+
 function Light:new_draw()
-	--foreach wall
-	--	??
-	--end
+	local objects = physic.query(
+		self.x - self.radius, self.y - self.radius,
+		self.x + self.radius, self.y + self.radius
+	)
+	local points = {}
+	function distanceto(x, y)
+		return math.sqrt((x-self.x)^2 + (y-self.y)^2)
+	end
+	function projected(p, addangle)
+		addangle = addangle or 0
+		local destx = self.x + math.cos(p.angle + addangle) * self.radius
+		local desty = self.y + math.sin(p.angle + addangle) * self.radius
+		local collides, colx, coly = physic.raycast(self.x, self.y,
+									destx, desty, raycast_callback)
+		local x, y = colx or destx, coly or desty
+		local distance = distanceto(x, y) / self.radius
+		local p = {
+			x=x,
+			y=y,
+			angle=p.angle + addangle,
+			distance=distance,
+		}
+		return p
+	end
+	local debug = LIGHT_DEBUG
+	for _, o in ipairs(objects) do
+		local parent = o.parent
+		if parent.is_wall then
+			for i, vertex in ipairs(parent.vertices) do
+				local collides, colx, coly = physic.raycast(self.x, self.y,
+				vertex.x, vertex.y, raycast_callback)
+				local x, y = colx or vertex.x, coly or vertex.y
+
+				local angle = math.atan2(y - self.y, x - self.x) % (math.pi*2)
+				local distance = distanceto(x, y) / self.radius
+				local new_point = {x=x, y=y, angle=angle, distance=distance}
+				table.insert(points, new_point)
+
+				if debug then
+					drystal.set_color(255, 0, 0)
+					drystal.draw_line(self.x*R, self.y*R, x*R, y*R)
+				end
+
+				local delta = math.pi / 1000
+				local proj = projected(new_point, delta)
+				local proj2 = projected(new_point, -delta)
+				table.insert(points, proj)
+				table.insert(points, proj2)
+
+				if debug then
+					drystal.set_color(255, 255, 0)
+					drystal.draw_line(self.x*R, self.y*R, proj.x*R, proj.y*R)
+					drystal.draw_line(self.x*R, self.y*R, proj2.x*R, proj2.y*R)
+				end
+			end
+		end
+	end
+	table.sort(points, function(p1, p2)
+		if p1.angle ~= p2.angle then
+			return p1.angle < p2.angle
+		end
+		return p1.distance < p2.distance
+	end)
+	if #points > 0 then
+		local maxdelta = math.pi / 10
+
+		drystal.set_color(0, 0, 255)
+		local p1 = points[1]
+		while p1.angle >= maxdelta do
+			local proj = projected(p1, -maxdelta)
+			table.insert(points, 1, proj)
+			p1 = points[1]
+			if debug then
+				drystal.draw_line(self.x*R, self.y*R, proj.x*R, proj.y*R)
+			end
+		end
+
+		drystal.set_color(200, 0, 200)
+		local pn = points[#points]
+		while pn.angle < math.pi*2 - maxdelta do
+			local proj = projected(pn, maxdelta)
+			table.insert(points, proj)
+			pn = points[#points]
+			if debug then
+				drystal.draw_line(self.x*R, self.y*R, proj.x*R, proj.y*R)
+			end
+		end
+
+		for i = 1, #points - 1 do
+			local p1 = points[i]
+			local p2 = points[i + 1]
+			while p1.angle + maxdelta < p2.angle do
+				local proj = projected(p1, maxdelta)
+				table.insert(points, i + 1, proj)
+				if debug then
+					drystal.set_color(0, 255, 0)
+					drystal.draw_line(self.x*R, self.y*R, proj.x*R, proj.y*R)
+				end
+				i = i + 1
+				p1 = points[i]
+				p2 = points[i % #points + 1]
+			end
+		end
+
+		drystal.set_color(self.color)
+		local r = sprites.lightmap.w / 2
+		local centerx = sprites.lightmap.x + r
+		local centery = sprites.lightmap.y + r
+
+		local function draw(p1, p2)
+			drystal.draw_surface(
+				centerx, centery,
+				centerx+math.cos(p1.angle)*p1.distance*r, centery+math.sin(p1.angle)*p1.distance*r,
+				centerx+math.cos(p2.angle)*p2.distance*r, centery+math.sin(p2.angle)*p2.distance*r,
+
+				self.x*R, self.y*R,
+				p1.x*R, p1.y*R,
+				p2.x*R, p2.y*R
+			)
+		end
+		for i = 1, #points - 1 do
+			draw(points[i], points[i + 1])
+		end
+		draw(points[1], points[#points])
+	else
+		local sprite = sprites.lightmap
+		local w, h = self.radius*R*2, self.radius*R*2
+		drystal.draw_sprite_resized(sprite, self.x*R-w/2, self.y*R-h/2, w, h)
+	end
 end
 function Light:draw()
-	self:old_draw()
-	self:new_draw()
+	if self.radius == 0 then
+		return
+	end
+	drystal.set_alpha(120)
+	drystal.set_color(self.color)
+	if OLD_LIGHT then
+		self:old_draw()
+	else
+		self:new_draw()
+	end
 end
 
 function Light:associate_with(object)

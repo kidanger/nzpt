@@ -7,17 +7,25 @@ local Wall = {
 	y=0,
 	w=0,
 	h=0,
+	is_wall=true,
+	vertices={},
 }
 Wall.__index = Wall
 
 function Wall.new(x, y, w, h)
-	local w = {
+	local wall = {
 		x=x,
 		y=y,
 		w=w,
 		h=h,
 	}
-	return setmetatable(w, Wall)
+	wall.vertices = {
+		{x=x, y=y},
+		{x=x+w, y=y},
+		{x=x+w, y=y+h},
+		{x=x, y=y+h},
+	}
+	return setmetatable(wall, Wall)
 end
 
 function Wall:init()
@@ -29,7 +37,7 @@ function Wall:init()
 end
 
 function Wall:draw()
-	drystal.set_color(255, 0, 0)
+	drystal.set_color(0, 0, 0)
 	local x, y = self:get_screen_position()
 	drystal.draw_rect(x, y, self.w*R, self.h*R)
 end
