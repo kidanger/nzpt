@@ -43,6 +43,10 @@ end
 
 function Hero:update(dt)
 	local moving = false
+
+	local dx, dy = self.body:get_linear_velocity()
+	local oldspeed = math.abs(dx)+math.abs(dy)
+
 	do
 		local dx, dy = 0, 0
 		if self.up then
@@ -89,7 +93,8 @@ function Hero:update(dt)
 	end
 	do
 		if moving then
-			self.anim_timer = self.anim_timer + dt
+			oldspeed = math.min(oldspeed/10, 1)
+			self.anim_timer = self.anim_timer + dt * oldspeed
 			if self.anim_timer >= self.anim_speed then
 				self.anim_state = 1 + ((self.anim_state + 1) % #self.anim)
 				self.anim_timer = 0

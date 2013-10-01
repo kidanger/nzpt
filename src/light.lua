@@ -241,6 +241,7 @@ function Light:draw()
 			drystal.use_buffer(self.buffer)
 			self:_draw()
 			drystal.use_buffer()
+			drystal.upload_and_free_buffer(self.buffer)
 		end
 		drystal.draw_buffer(self.buffer)
 	else

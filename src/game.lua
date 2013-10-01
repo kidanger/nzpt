@@ -18,6 +18,16 @@ Game.__index = Game
 
 function Game:on_enter()
 	physic.create_world(0, 0)
+	physic.on_collision(
+		function (b1, b2)
+			if b1.begin_collide then b1:begin_collide(b2) end
+			if b2.begin_collide then b2:begin_collide(b1) end
+		end,
+		function (b1, b2)
+			if b1.end_collide then b1:end_collide(b2) end
+			if b2.end_collide then b2:end_collide(b1) end
+		end
+	)
 	self.hero = Hero.new()
 	self.hero:init(9, 12)
 
