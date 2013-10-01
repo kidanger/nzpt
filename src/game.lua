@@ -40,14 +40,15 @@ function Game:on_enter()
 
 	local l1 = Light.new(13, 12, 13, {255, 255, 255})
 	l1:associate_with(self.hero)
-	l1.bufferable = false
 	table.insert(self.lights, l1)
 
 	local l2 = Light.new(13, 18.5, 10, {150, 150, 255})
 	l2.blink_freq = 2
 	table.insert(self.lights, l2)
 
-	local l3 = Light.new(10, 17, 4, {255, 0, 0})
+	local l3 = Light.new(12, 16, 1.8, {255, 0, 0})
+	l3.dioding = true
+	l3.diode_freq = 0.3
 	table.insert(self.lights, l3)
 
 	drystal.set_filter_mode(drystal.FILTER_NEAREST)

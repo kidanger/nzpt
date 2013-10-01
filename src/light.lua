@@ -12,8 +12,12 @@ local Light = {
 	bound_to=nil,
 	blink_freq=0,
 
+	diode_timer=0,
+	diode_freq=0,
+
 	buffer=nil,
-	bufferable=true,
+	modified=true,
+	freed=false,
 }
 Light.__index = Light
 
@@ -27,6 +31,7 @@ function Light.new(x, y, radius, color)
 		original_radius=radius,
 		color=color,
 	}
+	l.buffer = drystal.new_buffer()
 	return setmetatable(l, Light)
 end
 
@@ -37,13 +42,30 @@ end
 function Light:update(dt)
 	if self.bound_to then
 		local x, y = self.bound_to.body:get_position()
-		self.x = x
-		self.y = y
+		if x ~= self.x or y ~= self.y then
+			self.x = x
+			self.y = y
+			self.modified = true
+		end
+	end
+	if self.diode_freq > 0 then
+		self.diode_timer = self.diode_timer + dt
+		if self.diode_timer > self.diode_freq then
+			self.diode_timer = 0
+			if self.radius == 0 then
+				self.radius = self.original_radius
+			else
+				self.radius = 0
+			end
+			self.modified = true
+		end
 	end
 	if math.random() < self.blink_freq*dt then
 		self.radius = self.radius * 0.8
+		self.modified = true
 	elseif math.random() < self.blink_freq*dt then
 		self.radius = self.original_radius
+		self.modified = true
 	end
 end
 
@@ -235,18 +257,24 @@ function Light:draw()
 	if self.radius == 0 then
 		return
 	end
-	if self.bufferable then
-		if not self.buffer then
-			self.buffer = drystal.new_buffer()
-			drystal.use_buffer(self.buffer)
-			self:_draw()
-			drystal.use_buffer()
-			drystal.upload_and_free_buffer(self.buffer)
-		end
-		drystal.draw_buffer(self.buffer)
-	else
+
+	if self.modified and not self.freed then
+		drystal.reset_buffer(self.buffer)
+		drystal.use_buffer(self.buffer)
 		self:_draw()
+		drystal.use_buffer()
+		if self:is_fastbufferable() then
+			drystal.upload_and_free_buffer(self.buffer)
+			self.freed = true
+		end
+		self.modified = false
 	end
+
+	drystal.draw_buffer(self.buffer)
+end
+
+function Light:is_fastbufferable()
+	return self.bound_to == nil and self.blink_freq == 0
 end
 
 function Light:associate_with(object)
