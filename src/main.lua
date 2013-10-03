@@ -38,8 +38,18 @@ function drystal.key_release(key)
 		state:key_release(key)
 	end
 end
+function drystal.mouse_motion(x, y)
+	if state.mouse_motion then
+		state:mouse_motion(x, y)
+	end
+end
 function drystal.mouse_press(x, y, b)
 	if state.mouse_press then
 		state:mouse_press(x, y, b)
+	end
+end
+function drystal.mouse_release(x, y, b)
+	if state.mouse_release then
+		state:mouse_release(x, y, b)
 	end
 end

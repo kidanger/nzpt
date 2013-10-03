@@ -245,7 +245,7 @@ function Light:new_draw()
 	end
 end
 function Light:_draw()
-	drystal.set_alpha(200)
+	drystal.set_alpha(140)
 	drystal.set_color(self.color)
 	if OLD_LIGHT then
 		self:old_draw()
@@ -274,7 +274,7 @@ function Light:draw()
 end
 
 function Light:is_fastbufferable()
-	return self.bound_to == nil and self.blink_freq == 0
+	return self.bound_to == nil and self.blink_freq == 0 and self.diode_freq == 0
 end
 
 function Light:associate_with(object)
