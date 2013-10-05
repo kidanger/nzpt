@@ -4,6 +4,7 @@ local physic = require 'physic'
 local Hero = require 'src/hero'
 local Wall = require 'src/wall'
 local Light = require 'src/light'
+local Ghost = require 'src/ghost'
 local sprites = require 'data/sprites'
 
 local mouse_x, mouse_y = 0, 0
@@ -13,6 +14,7 @@ local Game = {
 	hero=nil,
 	walls={},
 	lights={},
+	ghosts={},
 
 	map_surface=nil,
 	zoom=1,
@@ -38,7 +40,7 @@ function Game:on_enter()
 			if b2.end_collide then b2:end_collide(b1) end
 		end
 	)
-	self.hero = Hero.new()
+	self.hero = Hero.new(self)
 	self.hero:init(9, 12)
 
 	table.insert(self.walls, Wall.new(12.6, 17, 5, 1):init())
@@ -50,16 +52,15 @@ function Game:on_enter()
 
 	local l1 = Light.new(13, 12, 13, {255, 255, 255})
 	l1:associate_with(self.hero)
-	table.insert(self.lights, l1)
+	self:add_light(l1)
 
 	local l2 = Light.new(13, 18.5, 10, {50, 50, 255})
 	l2.blink_freq = 2
-	table.insert(self.lights, l2)
+	self:add_light(l2)
 
 	local l3 = Light.new(12, 16, 1.8, {255, 0, 0})
-	l3.dioding = true
-	l3.diode_freq = 0.3
-	table.insert(self.lights, l3)
+	-- l3.diode_freq = 0.1
+	self:add_light(l3)
 
 	drystal.set_filter_mode(drystal.FILTER_NEAREST)
 	self.spritesheet = drystal.load_surface(sprites.image)
@@ -67,11 +68,28 @@ function Game:on_enter()
 	self.map_surface = drystal.new_surface(sw, sh)
 end
 
+function Game:add_light(light)
+	table.insert(self.lights, light)
+end
+
+function Game:add_ghost(ghost)
+	ghost.game = self
+	table.insert(self.ghosts, ghost)
+end
+
 function Game:update(dt)
 	self.hero:update(dt)
+	for _, g in ipairs(self.ghosts) do
+		g:update(dt)
+	end
 
 	physic.update(dt)
 
+	for i, l in ipairs(self.lights) do
+		if l.remove_me then
+			table.remove(self.lights, i)
+		end
+	end
 	for _, l in ipairs(self.lights) do
 		l:update(dt)
 	end
@@ -119,6 +137,9 @@ function Game:draw()
 		end
 	end
 	self.hero:draw()
+	for _, g in ipairs(self.ghosts) do
+		g:draw()
+	end
 	for _, w in ipairs(self.walls) do
 		w:draw()
 	end
@@ -158,6 +179,14 @@ function Game:key_press(key)
 		self.hero:go_down(true)
 	elseif key == 'z' then
 		self.hero:go_up(true)
+	elseif key == 'e' then
+		self.hero:try_place_teleporter()
+	elseif key == 'space' then
+		self.hero:try_use_teleporter()
+	elseif key == 'g' then
+		local posx = self.hero:get_x()+math.random(-10, 10)
+		local posy = self.hero:get_y()+math.random(-10, 10)
+		self:add_ghost(Ghost.new():init(posx, posy))
 	elseif key == 'p' then
 		local r = math.random() * 255
 		local g = math.random() * 255

@@ -4,6 +4,7 @@ local physic = require 'physic'
 local sprites = require 'data/sprites'
 
 local Light = {
+	name='light',
 	x=0,
 	y=0,
 	radius=4,
@@ -15,9 +16,13 @@ local Light = {
 	diode_timer=0,
 	diode_freq=0,
 
+	radius_changeable=false,
+
 	buffer=nil,
 	modified=true,
 	freed=false,
+
+	remove_me=false,
 }
 Light.__index = Light
 
@@ -37,6 +42,22 @@ end
 
 function Light:init()
 	return self
+end
+
+function Light:destroy()
+	if self.buffer then
+		drystal.free_buffer(self.buffer)
+		self.buffer = nil
+		self.remove_me = true
+	end
+end
+
+function Light:change_radius(new_radius)
+	if new_radius ~= self.original_radius then
+		self.original_radius = new_radius
+		self.radius = new_radius
+		self.modified = true
+	end
 end
 
 function Light:update(dt)
@@ -177,7 +198,7 @@ function Light:new_draw()
 		return p1.distance < p2.distance
 	end)
 	if #points > 0 then
-		local maxdelta = math.pi / 14
+		local maxdelta = math.pi / 6
 
 		drystal.set_color(0, 0, 255)
 		local p1 = points[1]
@@ -254,7 +275,7 @@ function Light:_draw()
 	end
 end
 function Light:draw()
-	if self.radius == 0 then
+	if self.radius == 0 or self.remove_me then
 		return
 	end
 
@@ -274,7 +295,7 @@ function Light:draw()
 end
 
 function Light:is_fastbufferable()
-	return self.bound_to == nil and self.blink_freq == 0 and self.diode_freq == 0
+	return self.bound_to == nil and self.blink_freq == 0 and self.diode_freq == 0 and self.radius_changeable == false
 end
 
 function Light:associate_with(object)

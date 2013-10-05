@@ -1,9 +1,13 @@
 local drystal = require 'drystal'
 local physic = require 'physic'
 
+local Teleporter = require 'src/teleporter'
+local Ghost = require 'src/ghost'
 local sprites = require 'data/sprites'
 
 local Hero = {
+	name='hero',
+	game=nil,
 	body=nil,
 	up=false,
 	down=false,
@@ -20,12 +24,16 @@ local Hero = {
 	anim_timer=0,
 	anim=sprites.perso_anim,
 
+	teleporter=nil,
+
 	is_translucent=true,
 }
 Hero.__index = Hero
 
-function Hero.new()
-	return setmetatable({}, Hero)
+function Hero.new(game)
+	local hero = setmetatable({}, Hero)
+	hero.game = game
+	return hero
 end
 
 function Hero:init(x, y)
@@ -39,6 +47,7 @@ function Hero:init(x, y)
 	self.body:set_angular_damping(6)
 	self.body:set_linear_damping(15)
 	self.body.parent = self
+	return self
 end
 
 function Hero:update(dt)
@@ -103,9 +112,17 @@ function Hero:update(dt)
 			self.anim_state = 1
 		end
 	end
+
+	if self.teleporter then
+		self.teleporter:update(dt)
+	end
 end
 
 function Hero:draw()
+	if self.teleporter then
+		self.teleporter:draw()
+	end
+
 	local sprite = self.anim[self.anim_state]
 
 	local angle = self.body:get_angle() + math.pi/2
@@ -143,6 +160,41 @@ function Hero:go_left(bool)
 end
 function Hero:go_right(bool)
 	self.right = bool
+end
+
+function Hero:try_grab_teleporter()
+	if self.teleporter then
+		local dist = math.sqrt((self.teleporter.x-self:get_x())^2 + (self.teleporter.y-self:get_y())^2)
+		if dist < self.radius + self.teleporter.radius then
+			self.teleporter:destroy()
+			self.teleporter = nil
+			return true
+		end
+	end
+	return false
+end
+
+function Hero:try_place_teleporter()
+	if self.teleporter then
+		self:try_grab_teleporter()
+	else
+		self.teleporter = Teleporter.new()
+		self.teleporter:init(self:get_x(), self:get_y())
+		self.game:add_light(self.teleporter.light)
+	end
+end
+
+function Hero:try_use_teleporter()
+	if self.teleporter ~= nil and self.teleporter.is_loaded then
+		self.teleporter:use(self)
+		self:try_grab_teleporter()
+
+		-- spawn a ghost
+		local posx = self:get_x()+math.random(-10, 10)
+		local posy = self:get_y()+math.random(-10, 10)
+		local ghost = Ghost.new():init(posx, posy)
+		self.game:add_ghost(ghost)
+	end
 end
 
 return Hero

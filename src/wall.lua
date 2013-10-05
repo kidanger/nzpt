@@ -2,6 +2,7 @@ local drystal = require 'drystal'
 local physic = require 'physic'
 
 local Wall = {
+	name='wall',
 	body=nil,
 	x=0,
 	y=0,
