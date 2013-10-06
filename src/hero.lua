@@ -1,19 +1,24 @@
 local drystal = require 'drystal'
 local physic = require 'physic'
 
+local Light = require 'src/light'
 local Teleporter = require 'src/teleporter'
 local Ghost = require 'src/ghost'
 local sprites = require 'data/sprites'
 
 local Hero = {
 	name='hero',
-	game=nil,
+	map=nil,
 	body=nil,
 	up=false,
 	down=false,
 	left=false,
 	right=false,
 	speed=700,
+
+	damage_taken=0,
+	max_hp=2,
+	took_damage_timer=0,
 
 	radius=0.35,
 	shoulders_width=.4,
@@ -26,13 +31,17 @@ local Hero = {
 
 	teleporter=nil,
 
+	light_radius=13,
+	light=nil,
+
 	is_translucent=true,
 }
 Hero.__index = Hero
 
-function Hero.new(game)
+function Hero.new()
 	local hero = setmetatable({}, Hero)
-	hero.game = game
+
+	hero.light = Light.new(0, 0, hero.light_radius, {255, 255, 255})
 	return hero
 end
 
@@ -47,10 +56,16 @@ function Hero:init(x, y)
 	self.body:set_angular_damping(6)
 	self.body:set_linear_damping(15)
 	self.body.parent = self
+
+	self.light:init()
+	self.map:add_light(self.light)
+	self.light:associate_with(self)
 	return self
 end
 
 function Hero:update(dt)
+	self.took_damage_timer = math.max(self.took_damage_timer - dt, 0)
+
 	local moving = false
 
 	local dx, dy = self.body:get_linear_velocity()
@@ -123,6 +138,10 @@ function Hero:draw()
 		self.teleporter:draw()
 	end
 
+	if self.took_damage_timer > .2 then
+		drystal.set_color(255, 0, 0)
+	end
+
 	local sprite = self.anim[self.anim_state]
 
 	local angle = self.body:get_angle() + math.pi/2
@@ -162,6 +181,16 @@ function Hero:go_right(bool)
 	self.right = bool
 end
 
+function Hero:take_damage(from)
+	if self.took_damage_timer == 0 then
+		self.damage_taken = self.damage_taken + 1
+		local dx = self:get_x() - from:get_x()
+		local dy = self:get_y() - from:get_y()
+		self.body:apply_linear_impulse(dx*30, dy*30)
+		self.took_damage_timer = 1
+	end
+end
+
 function Hero:try_grab_teleporter()
 	if self.teleporter then
 		local dist = math.sqrt((self.teleporter.x-self:get_x())^2 + (self.teleporter.y-self:get_y())^2)
@@ -180,7 +209,7 @@ function Hero:try_place_teleporter()
 	else
 		self.teleporter = Teleporter.new()
 		self.teleporter:init(self:get_x(), self:get_y())
-		self.game:add_light(self.teleporter.light)
+		self.map:add_light(self.teleporter.light)
 	end
 end
 
@@ -192,8 +221,8 @@ function Hero:try_use_teleporter()
 		-- spawn a ghost
 		local posx = self:get_x()+math.random(-10, 10)
 		local posy = self:get_y()+math.random(-10, 10)
-		local ghost = Ghost.new():init(posx, posy)
-		self.game:add_ghost(ghost)
+		local ghost = Ghost.new(posx, posy):init()
+		self.map:add_ghost(ghost)
 	end
 end
 

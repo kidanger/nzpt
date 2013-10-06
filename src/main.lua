@@ -1,18 +1,25 @@
 local drystal = require 'drystal'
 
-local gamestate = require 'src/game'
+local Game = require 'src/game'
+local Map = require 'src/map'
 
+local gamestate
 local state
 
 R = 32
 
 function switch_state(newstate)
 	state = newstate
-	state:on_enter()
+	if state.on_enter then
+		state:on_enter()
+	end
 end
 
 function drystal.init()
 	drystal.resize(900, 780)
+	gamestate = Game.new()
+	local map = Map.load_from_file('test')
+	gamestate:change_map(map)
 	switch_state(gamestate)
 end
 

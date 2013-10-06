@@ -5,33 +5,52 @@ local sprites = require 'data/sprites'
 
 local Ghost = {
 	name='ghost',
-	game=nil, -- set by Game:add_ghost
+	map=nil, -- set by Map:add_ghost
 	body=nil,
 	speed=400,
 
 	radius=0.35,
 	sight_radius=90,
 	last_seen={x=0, y=0},
-	has_seen=false,
+	last_seen_timer=0,
+
+	last_random_dx=0,
+	last_random_dy=0,
+
+	touch_hero=false,
 
 	is_translucent=true,
 }
 Ghost.__index = Ghost
 
-function Ghost.new()
-	local ghost = setmetatable({}, Ghost)
+function Ghost.new(x, y)
+	local ghost = setmetatable({
+		x=x,
+		y=y,
+	}, Ghost)
 	return ghost
 end
 
-function Ghost:init(x, y)
+function Ghost:init()
 	local head_shape = physic.new_shape('circle', self.radius)
 
 	self.body = physic.new_body(true, head_shape)
-	self.body:set_position(x, y)
+	self.body:set_position(self.x, self.y)
 
 	self.body:set_angular_damping(6)
 	self.body:set_linear_damping(15)
 	self.body.parent = self
+
+	self.body.begin_collide = function(body, other)
+		if other.parent == self.map.hero then
+			self.touch_hero = true
+		end
+	end
+	self.body.end_collide = function(body, other)
+		if other.parent == self.map.hero then
+			self.touch_hero = false
+		end
+	end
 	return self
 end
 
@@ -40,26 +59,35 @@ function Ghost:destroy()
 end
 
 local function raycast_callback(body, fraction)
-	if body.parent.is_translucent then
+	if not (body.parent.is_wall or body.parent.is_door) then
 		return 1, false
 	end
 	return fraction, true
 end
 function Ghost:update(dt)
+	if self.touch_hero then
+		self.map.hero:take_damage(self)
+	end
 	local dx, dy = 0, 0
 	do
 		local x, y = self:get_x(), self:get_y()
-		local tx, ty = self.game.hero:get_x(), self.game.hero:get_y()
+		local tx, ty = self.map.hero:get_x(), self.map.hero:get_y()
 		if math.abs((x-tx)^2 + (y-ty)^2) < self.sight_radius then
 			local collides = physic.raycast(x, y, tx, ty, raycast_callback)
 			if collides == nil then
-				self.has_seen = true
+				self.last_seen_timer = 6
 				self.last_seen = {x=tx, y=ty}
 			end
 		end
-		if self.has_seen then
+		if self.last_seen_timer > 0 then
+			self.last_seen_timer = self.last_seen_timer - dt
 			dx = self.last_seen.x - x
 			dy = self.last_seen.y - y
+		else
+			dx = self.last_random_dx + math.random(-2, 2)/10
+			dy = self.last_random_dy + math.random(-2, 2)/10
+			self.last_random_dx = dx
+			self.last_random_dy = dy
 		end
 	end
 	do

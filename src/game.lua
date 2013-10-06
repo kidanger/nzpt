@@ -5,16 +5,14 @@ local Hero = require 'src/hero'
 local Wall = require 'src/wall'
 local Light = require 'src/light'
 local Ghost = require 'src/ghost'
+local Door = require 'src/door'
 local sprites = require 'data/sprites'
 
 local mouse_x, mouse_y = 0, 0
 local SHOW_DARKNESS = true
 
 local Game = {
-	hero=nil,
-	walls={},
-	lights={},
-	ghosts={},
+	map=nil,
 
 	map_surface=nil,
 	zoom=1,
@@ -28,74 +26,63 @@ local Game = {
 }
 Game.__index = Game
 
-function Game:on_enter()
-	physic.create_world(0, 0)
-	physic.on_collision(
-		function (b1, b2)
-			if b1.begin_collide then b1:begin_collide(b2) end
-			if b2.begin_collide then b2:begin_collide(b1) end
-		end,
-		function (b1, b2)
-			if b1.end_collide then b1:end_collide(b2) end
-			if b2.end_collide then b2:end_collide(b1) end
-		end
-	)
-	self.hero = Hero.new(self)
-	self.hero:init(9, 12)
+-- static initialisation
+physic.create_world(0, 0)
+physic.on_collision(
+	function (b1, b2)
+		if b1.begin_collide then b1:begin_collide(b2) end
+		if b2.begin_collide then b2:begin_collide(b1) end
+	end,
+	function (b1, b2)
+		if b1.end_collide then b1:end_collide(b2) end
+		if b2.end_collide then b2:end_collide(b1) end
+	end
+)
 
-	table.insert(self.walls, Wall.new(12.6, 17, 5, 1):init())
-	table.insert(self.walls, Wall.new(12, 16, .6, 7):init())
-	table.insert(self.walls, Wall.new(9, 6, 5, 5):init())
-	-- map borders
-	table.insert(self.walls, Wall.new(0, 0, 35, 5):init())
-	table.insert(self.walls, Wall.new(35, 0, 5, 40):init())
-
-	local l1 = Light.new(13, 12, 13, {255, 255, 255})
-	l1:associate_with(self.hero)
-	self:add_light(l1)
-
-	local l2 = Light.new(13, 18.5, 10, {50, 50, 255})
-	l2.blink_freq = 2
-	self:add_light(l2)
-
-	local l3 = Light.new(12, 16, 1.8, {255, 0, 0})
-	-- l3.diode_freq = 0.1
-	self:add_light(l3)
+function Game.new()
+	local game = setmetatable({}, Game)
 
 	drystal.set_filter_mode(drystal.FILTER_NEAREST)
-	self.spritesheet = drystal.load_surface(sprites.image)
+	game.spritesheet = drystal.load_surface(sprites.image)
 	local sw, sh = drystal.surface_size(drystal.screen)
-	self.map_surface = drystal.new_surface(sw, sh)
+	game.map_surface = drystal.new_surface(sw, sh)
+
+	return game
 end
 
-function Game:add_light(light)
-	table.insert(self.lights, light)
-end
+function Game:change_map(map)
+	self.map = map
 
-function Game:add_ghost(ghost)
-	ghost.game = self
-	table.insert(self.ghosts, ghost)
+	map.hero = map:new_hero()
+	map.hero:init(9, 12)
 end
 
 function Game:update(dt)
-	self.hero:update(dt)
-	for _, g in ipairs(self.ghosts) do
+	local map = self.map
+
+	map.hero:update(dt)
+	for _, g in ipairs(map.ghosts) do
 		g:update(dt)
+	end
+	for _, d in ipairs(map.doors) do
+		d:update(dt)
 	end
 
 	physic.update(dt)
 
-	for i, l in ipairs(self.lights) do
+	for i, l in ipairs(map.lights) do
 		if l.remove_me then
-			table.remove(self.lights, i)
+			table.remove(map.lights, i)
 		end
 	end
-	for _, l in ipairs(self.lights) do
+	for _, l in ipairs(map.lights) do
 		l:update(dt)
 	end
 end
 
 function Game:draw()
+	local map = self.map
+
 	drystal.set_blend_mode(drystal.BLEND_DEFAULT)
 	drystal.set_alpha(255)
 	if SHOW_DARKNESS then
@@ -106,7 +93,7 @@ function Game:draw()
 	drystal.draw_background()
 
 	local sw, sh = drystal.surface_size(drystal.screen)
-	local x, y = self.hero:get_screen_position()
+	local x, y = map.hero:get_screen_position()
 	x, y = sw / 2 - x, sh / 2 - y
 	drystal.camera.x, drystal.camera.y = x, y
 	drystal.camera.zoom = self.zoom
@@ -116,7 +103,7 @@ function Game:draw()
 
 	drystal.draw_from(self.spritesheet)
 	drystal.set_blend_mode(drystal.BLEND_ADD)
-	for _, l in ipairs(self.lights) do
+	for _, l in ipairs(map.lights) do
 		l:draw()
 	end
 
@@ -136,12 +123,17 @@ function Game:draw()
 			end
 		end
 	end
-	self.hero:draw()
-	for _, g in ipairs(self.ghosts) do
+	map.hero:draw()
+	drystal.set_color(255, 255, 255)
+	for _, g in ipairs(map.ghosts) do
 		g:draw()
 	end
-	for _, w in ipairs(self.walls) do
+	drystal.set_color(255, 255, 255)
+	for _, w in ipairs(map.walls) do
 		w:draw()
+	end
+	for _, d in ipairs(map.doors) do
+		d:draw()
 	end
 
 	if self.editor.doing then
@@ -166,32 +158,47 @@ function Game:draw()
 	local spmap = {x=0, y=0, w=sw, h=sh}
 	drystal.draw_sprite(spmap, 0, 0)
 
+	do -- draw hud
+		drystal.draw_from(self.spritesheet)
+		drystal.camera.reset()
+		drystal.set_blend_mode(drystal.BLEND_DEFAULT)
+		drystal.set_alpha(255)
+		drystal.set_color(255, 255, 255)
+
+		for health = 0, map.hero.max_hp - map.hero.damage_taken - 1 do
+			drystal.draw_sprite(sprites.perso_null, 20 + health*sprites.perso_null.w, 20)
+		end
+	end
+
+	-- update camera to be able to use drystal.screen2scene in event callbacks
 	drystal.camera.x, drystal.camera.y = x, y
 	drystal.camera.zoom = self.zoom
 end
 
 function Game:key_press(key)
+	local hero = self.map.hero
+
 	if key == 'q' then
-		self.hero:go_left(true)
+		hero:go_left(true)
 	elseif key == 'd' then
-		self.hero:go_right(true)
+		hero:go_right(true)
 	elseif key == 's' then
-		self.hero:go_down(true)
+		hero:go_down(true)
 	elseif key == 'z' then
-		self.hero:go_up(true)
+		hero:go_up(true)
 	elseif key == 'e' then
-		self.hero:try_place_teleporter()
+		hero:try_place_teleporter()
 	elseif key == 'space' then
-		self.hero:try_use_teleporter()
+		hero:try_use_teleporter()
 	elseif key == 'g' then
-		local posx = self.hero:get_x()+math.random(-10, 10)
-		local posy = self.hero:get_y()+math.random(-10, 10)
-		self:add_ghost(Ghost.new():init(posx, posy))
+		local posx = hero:get_x()+math.random(-10, 10)
+		local posy = hero:get_y()+math.random(-10, 10)
+		self.map:add_ghost(Ghost.new(posx, posy):init())
 	elseif key == 'p' then
 		local r = math.random() * 255
 		local g = math.random() * 255
 		local b = math.random() * 255
-		table.insert(self.lights, Light.new(self.hero:get_x(), self.hero:get_y(),
+		self.map:add_light(Light.new(hero:get_x(), hero:get_y(),
 									math.random(4, 14), {r, g, b}):init())
 	elseif key == 'o' then
 		OLD_LIGHT = not (OLD_LIGHT or false)
@@ -202,14 +209,15 @@ function Game:key_press(key)
 	end
 end
 function Game:key_release(key)
+	local hero = self.map.hero
 	if key == 'q' then
-		self.hero:go_left(false)
+		hero:go_left(false)
 	elseif key == 'd' then
-		self.hero:go_right(false)
+		hero:go_right(false)
 	elseif key == 's' then
-		self.hero:go_down(false)
+		hero:go_down(false)
 	elseif key == 'z' then
-		self.hero:go_up(false)
+		hero:go_up(false)
 	end
 end
 function Game:mouse_motion(x, y)
@@ -226,18 +234,7 @@ function Game:mouse_press(x, y, b)
 		self.editor.sy = yy
 		self.editor.doing = true
 	elseif b == 3 then
-		local objects = physic.query(xx-0.1, yy-0.1, xx+0.1, yy+0.1)
-		for _, o in ipairs(objects) do
-			if o.parent.is_wall then
-				for i, w in ipairs(self.walls) do
-					if w == o.parent then
-						w:destroy()
-						table.remove(self.walls, i)
-						break
-					end
-				end
-			end
-		end
+		self.map:remove_at(xx, yy)
 	elseif b == 4 then
 		self.zoom = self.zoom * 1.2
 	elseif b == 5 then
@@ -254,9 +251,9 @@ function Game:mouse_release(x, y, b)
 		local miny = math.min(yy, self.editor.sy)
 		local w = math.abs(self.editor.sx - xx)
 		local h = math.abs(self.editor.sy - yy)
-		table.insert(self.walls, Wall.new(minx, miny, w, h):init())
+		self.map:add_wall(Wall.new(minx, miny, w, h):init())
 		self.editor.doing = false
 	end
 end
 
-return setmetatable({}, Game)
+return Game
