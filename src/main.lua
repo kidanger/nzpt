@@ -16,7 +16,7 @@ function switch_state(newstate)
 end
 
 function drystal.init()
-	drystal.resize(600, 480)
+	drystal.resize(700, 540)
 	gamestate = Game.new()
 	local map = Map.load_from_file('test')
 	gamestate:change_map(map)
@@ -33,9 +33,6 @@ function drystal.draw()
 end
 
 function drystal.key_press(key)
-	if key == 'a' then
-		drystal.engine_stop()
-	end
 	if state.key_press then
 		state:key_press(key)
 	end

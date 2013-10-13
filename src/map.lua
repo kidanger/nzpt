@@ -66,17 +66,34 @@ function Map:add_door(door)
 	table.insert(self.doors, door)
 end
 
-function Map:remove_at(x, y)
+function Map:remove(object)
+	local function remove_from(_table)
+		for i, e in ipairs(_table) do
+			if e == object then
+				e:destroy()
+				table.remove(_table, i)
+				break
+			end
+		end
+	end
+	remove_from(self.walls)
+	remove_from(self.lights)
+	remove_from(self.ghosts)
+	remove_from(self.doors)
+end
+local function distance(x, y, x2, y2)
+	return math.sqrt((x2-x)^2 + (y2-y)^2)
+end
+function Map:remove_at(x, y, filter)
 	local objects = physic.query(x-0.1, y-0.1, x+0.1, y+0.1)
 	for _, o in ipairs(objects) do
-		if o.parent.is_wall then
-			for i, w in ipairs(self.walls) do
-				if w == o.parent then
-					w:destroy()
-					table.remove(self.walls, i)
-					break
-				end
-			end
+		if filter(o.parent) then
+			self:remove(o.parent)
+		end
+	end
+	for _, l in ipairs(self.lights) do
+		if l ~= self.hero.light and distance(x, y, l.x, l.y) < l.original_radius and filter(l) then
+			self:remove(l)
 		end
 	end
 end

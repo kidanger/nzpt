@@ -23,6 +23,7 @@ local Light = {
 	freed=false,
 
 	remove_me=false,
+	is_light=true,
 }
 Light.__index = Light
 

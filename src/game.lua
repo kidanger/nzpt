@@ -6,10 +6,8 @@ local Wall = require 'src/wall'
 local Light = require 'src/light'
 local Ghost = require 'src/ghost'
 local Door = require 'src/door'
+local Editor = require 'src/editor'
 local sprites = require 'data/sprites'
-
-local mouse_x, mouse_y = 0, 0
-local SHOW_DARKNESS = true
 
 local Game = {
 	map=nil,
@@ -17,12 +15,9 @@ local Game = {
 	map_surface=nil,
 	zoom=1,
 	spritesheet=nil,
+	editor=nil,
 
-	editor={
-		sx=0,
-		sy=0,
-		doing=false,
-	},
+	show_darkness=true,
 }
 Game.__index = Game
 
@@ -47,6 +42,8 @@ function Game.new()
 	local sw, sh = drystal.surface_size(drystal.screen)
 	game.map_surface = drystal.new_surface(sw, sh)
 
+	game.editor = Editor.new(game)
+
 	return game
 end
 
@@ -61,8 +58,10 @@ function Game:update(dt)
 	local map = self.map
 
 	map.hero:update(dt)
-	for _, g in ipairs(map.ghosts) do
-		g:update(dt)
+	if not self.editor.activated then
+		for _, g in ipairs(map.ghosts) do
+			g:update(dt)
+		end
 	end
 	for _, d in ipairs(map.doors) do
 		d:update(dt)
@@ -78,25 +77,26 @@ function Game:update(dt)
 	for _, l in ipairs(map.lights) do
 		l:update(dt)
 	end
+
+	if self.editor.activated then
+		self.editor:update(dt)
+	end
 end
 
 function Game:draw()
+	local sw, sh = drystal.surface_size(drystal.screen)
 	local map = self.map
 
 	drystal.set_blend_mode(drystal.BLEND_DEFAULT)
 	drystal.set_alpha(255)
-	if SHOW_DARKNESS then
+	if self.show_darkness then
 		drystal.set_color(0, 0, 0)
 	else
-		drystal.set_color(200, 200, 200)
+		drystal.set_color(120, 120, 120)
 	end
 	drystal.draw_background()
 
-	local x, y = map.hero:get_screen_position()
-	local sw, sh = drystal.surface_size(drystal.screen)
-	x, y = sw / 2 - x, sh / 2 - y
-	drystal.camera.x, drystal.camera.y = x, y
-	drystal.camera.zoom = self.zoom
+	self:game_camera()
 
 	drystal.set_alpha(255)
 	drystal.set_color(0, 0, 0)
@@ -112,6 +112,7 @@ function Game:draw()
 	drystal.set_alpha(255)
 	drystal.set_color(255, 255, 255)
 	do
+		local x, y = drystal.camera.x, drystal.camera.y
 		local startx, starty = drystal.screen2scene(0, 0)
 		local endx, endy = drystal.screen2scene(sw, sh)
 		local sprite = sprites.parquet
@@ -135,32 +136,26 @@ function Game:draw()
 		d:draw()
 	end
 
-	if self.editor.doing then
+	do -- blit map on screen (multiplied)
+		drystal.draw_on(drystal.screen)
+		drystal.draw_from(self.map_surface)
+		self:gui_camera()
+		drystal.set_blend_mode(drystal.BLEND_MULT)
 		drystal.set_alpha(255)
-		drystal.set_color(0, 0, 0)
-		local xx, yy = drystal.screen2scene(mouse_x, mouse_y)
-		xx = xx - xx % 16
-		yy = yy - yy % 16
-		local minx = math.min(xx, self.editor.sx*R)
-		local miny = math.min(yy, self.editor.sy*R)
-		drystal.draw_rect(minx, miny,
-							math.abs(xx - self.editor.sx*R),
-							math.abs(yy - self.editor.sy*R))
+		drystal.set_color(255, 255, 255)
+		local spmap = {x=0, y=0, w=sw, h=sh}
+		drystal.draw_sprite(spmap, 0, 0)
 	end
 
-	drystal.draw_on(drystal.screen)
-	drystal.draw_from(self.map_surface)
-	drystal.camera.reset()
-	drystal.set_blend_mode(drystal.BLEND_MULT)
-	drystal.set_alpha(255)
-	drystal.set_color(255, 255, 255)
-	local spmap = {x=0, y=0, w=sw, h=sh}
-	drystal.draw_sprite(spmap, 0, 0)
+	drystal.set_blend_mode(drystal.BLEND_DEFAULT)
+	drystal.draw_from(self.spritesheet)
+
+	if self.editor.activated then
+		self.editor:draw()
+	end
 
 	do -- draw hud
-		drystal.draw_from(self.spritesheet)
-		drystal.camera.reset()
-		drystal.set_blend_mode(drystal.BLEND_DEFAULT)
+		self:gui_camera()
 		drystal.set_alpha(255)
 		drystal.set_color(255, 255, 255)
 
@@ -168,8 +163,22 @@ function Game:draw()
 			drystal.draw_sprite(sprites.perso_null, 20 + health*sprites.perso_null.w, 20)
 		end
 	end
+end
 
-	-- update camera to be able to use drystal.screen2scene in event callbacks
+function Game:m2g(x, y) -- mouse to game
+	self:game_camera()
+	local xx, yy = drystal.screen2scene(x, y)
+	xx = xx / R
+	yy = yy / R
+	return xx, yy
+end
+function Game:gui_camera()
+	drystal.camera.reset()
+end
+function Game:game_camera()
+	local sw, sh = drystal.surface_size(drystal.screen)
+	local x, y = self.map.hero:get_screen_position()
+	x, y = sw / 2 - x, sh / 2 - y
 	drystal.camera.x, drystal.camera.y = x, y
 	drystal.camera.zoom = self.zoom
 end
@@ -203,8 +212,8 @@ function Game:key_press(key)
 		OLD_LIGHT = not (OLD_LIGHT or false)
 	elseif key == 'l' then
 		LIGHT_DEBUG = not (LIGHT_DEBUG or false)
-	elseif key == 'w' then
-		SHOW_DARKNESS = not SHOW_DARKNESS
+	elseif self.editor.activated then
+		self.editor:key_press(key)
 	end
 end
 function Game:key_release(key)
@@ -217,24 +226,22 @@ function Game:key_release(key)
 		hero:go_down(false)
 	elseif key == 'z' then
 		hero:go_up(false)
+	elseif key == 'c' then
+		self.editor:toggle()
+	elseif self.editor.activated then
+		self.editor:key_release(key)
 	end
 end
 function Game:mouse_motion(x, y)
-	mouse_x = x
-	mouse_y = y
+	if self.editor.activated then
+		self.editor:mouse_motion(x, y)
+	end
 end
 function Game:mouse_press(x, y, b)
-	local xx, yy = drystal.screen2scene(x, y)
-	xx = xx - xx % 16
-	yy = yy - yy % 16
-	xx = xx / R; yy = yy / R
-	if b == 1 then
-		self.editor.sx = xx
-		self.editor.sy = yy
-		self.editor.doing = true
-	elseif b == 3 then
-		self.map:remove_at(xx, yy)
-	elseif b == 4 then
+	if self.editor.activated then
+		self.editor:mouse_press(x, y, b)
+	end
+	if b == 4 then
 		if self.zoom < 3 then
 			self.zoom = self.zoom * 1.2
 		end
@@ -245,17 +252,8 @@ function Game:mouse_press(x, y, b)
 	end
 end
 function Game:mouse_release(x, y, b)
-	local xx, yy = drystal.screen2scene(x, y)
-	xx = xx - xx % 16
-	yy = yy - yy % 16
-	xx = xx / R; yy = yy / R
-	if b == 1 then
-		local minx = math.min(xx, self.editor.sx)
-		local miny = math.min(yy, self.editor.sy)
-		local w = math.abs(self.editor.sx - xx)
-		local h = math.abs(self.editor.sy - yy)
-		self.map:add_wall(Wall.new(minx, miny, w, h):init())
-		self.editor.doing = false
+	if self.editor.activated then
+		self.editor:mouse_release(x, y, b)
 	end
 end
 
