@@ -92,8 +92,8 @@ function Game:draw()
 	end
 	drystal.draw_background()
 
-	local sw, sh = drystal.surface_size(drystal.screen)
 	local x, y = map.hero:get_screen_position()
+	local sw, sh = drystal.surface_size(drystal.screen)
 	x, y = sw / 2 - x, sh / 2 - y
 	drystal.camera.x, drystal.camera.y = x, y
 	drystal.camera.zoom = self.zoom
@@ -111,7 +111,6 @@ function Game:draw()
 	drystal.set_blend_mode(drystal.BLEND_DEFAULT)
 	drystal.set_alpha(255)
 	drystal.set_color(255, 255, 255)
-	drystal.draw_background()
 	do
 		local startx, starty = drystal.screen2scene(0, 0)
 		local endx, endy = drystal.screen2scene(sw, sh)
@@ -137,7 +136,7 @@ function Game:draw()
 	end
 
 	if self.editor.doing then
-		drystal.set_alpha(150)
+		drystal.set_alpha(255)
 		drystal.set_color(0, 0, 0)
 		local xx, yy = drystal.screen2scene(mouse_x, mouse_y)
 		xx = xx - xx % 16
@@ -236,9 +235,13 @@ function Game:mouse_press(x, y, b)
 	elseif b == 3 then
 		self.map:remove_at(xx, yy)
 	elseif b == 4 then
-		self.zoom = self.zoom * 1.2
+		if self.zoom < 3 then
+			self.zoom = self.zoom * 1.2
+		end
 	elseif b == 5 then
-		self.zoom = self.zoom / 1.2
+		if self.zoom > 0.2 then
+			self.zoom = self.zoom / 1.2
+		end
 	end
 end
 function Game:mouse_release(x, y, b)

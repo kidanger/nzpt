@@ -139,6 +139,7 @@ function Light:new_draw()
 		self.x + self.radius, self.y + self.radius
 	)
 	local points = {}
+	--local penumbra_points = {}
 	function distanceto(x, y)
 		return math.sqrt((x-self.x)^2 + (y-self.y)^2)
 	end
@@ -182,6 +183,19 @@ function Light:new_draw()
 				local proj2 = projected(new_point, -delta)
 				table.insert(points, proj)
 				table.insert(points, proj2)
+
+				--if x == vertex.x and y == vertex.y and math.abs(proj2.distance - proj.distance) > 0.02 then
+				--	local orientation = proj2.distance < proj.distance and math.pi/10 or -math.pi/10
+				--	local consumed = distanceto(x, y)
+				--	local newradius = (self.radius - consumed) * .6
+				--	table.insert(penumbra_points, {
+				--		x=x,
+				--		y=y,
+				--		angle=angle-orientation,
+				--		orientation=orientation,
+				--		distance=math.max(proj.distance, proj2.distance)*newradius,
+				--	})
+				--end
 
 				if debug then
 					drystal.set_color(255, 255, 0)
@@ -264,6 +278,21 @@ function Light:new_draw()
 		local w, h = self.radius*R*2, self.radius*R*2
 		drystal.draw_sprite_resized(sprite, self.x*R-w/2, self.y*R-h/2, w, h)
 	end
+
+	--if #penumbra_points > 0 then
+	--	local sprite = sprites.penumbra
+	--	for _, p in ipairs(penumbra_points) do
+	--		drystal.draw_surface(
+	--			sprite.x, sprite.y,
+	--			sprite.x+sprite.w, sprite.y+sprite.h,
+	--			sprite.x+sprite.w, sprite.y,
+
+	--			p.x*R, p.y*R,
+	--			(p.x+math.cos(p.angle)*p.distance)*R, (p.y+math.sin(p.angle)*p.distance)*R,
+	--			(p.x+math.cos(p.angle+p.orientation)*p.distance)*R, (p.y+math.sin(p.angle+p.orientation)*p.distance)*R
+	--		)
+	--	end
+	--end
 end
 function Light:_draw()
 	drystal.set_alpha(140)
@@ -292,10 +321,11 @@ function Light:draw()
 	end
 
 	drystal.draw_buffer(self.buffer)
+	self.modified = true
 end
 
 function Light:is_fastbufferable()
-	return self.bound_to == nil and self.blink_freq == 0 and self.diode_freq == 0 and self.radius_changeable == false
+	return self.bound_to == nil and self.blink_freq == 0 and self.radius_changeable == false
 end
 
 function Light:associate_with(object)

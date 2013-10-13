@@ -14,8 +14,8 @@ local walls = {
 }
 
 local lights = {
-	Light.new(13, 18.5, 10, {50, 50, 255}),
 	Light.new(12, 16, 1.8, {255, 0, 0}),
+	Light.new(13, 18.5, 10, {50, 50, 255}),
 }
 
 lights[2].blink_freq = 2

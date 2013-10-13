@@ -16,7 +16,7 @@ function switch_state(newstate)
 end
 
 function drystal.init()
-	drystal.resize(900, 780)
+	drystal.resize(600, 480)
 	gamestate = Game.new()
 	local map = Map.load_from_file('test')
 	gamestate:change_map(map)
