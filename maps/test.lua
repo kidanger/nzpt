@@ -18,8 +18,6 @@ local lights = {
 	Light.new(13, 18.5, 10, {50, 50, 255}),
 }
 
-lights[2].blink_freq = 2
-
 local doors = {
 	Door.new(2, 10),
 }

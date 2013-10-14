@@ -64,7 +64,8 @@ end
 function Light:update(dt)
 	if self.bound_to then
 		local x, y = self.bound_to.body:get_position()
-		if x ~= self.x or y ~= self.y then
+		local delta = 0.1
+		if math.abs(x - self.x) > delta or math.abs(y - self.y) > delta then
 			self.x = x
 			self.y = y
 			self.modified = true
@@ -322,7 +323,6 @@ function Light:draw()
 	end
 
 	drystal.draw_buffer(self.buffer)
-	self.modified = true
 end
 
 function Light:is_fastbufferable()
