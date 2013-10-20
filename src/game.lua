@@ -117,8 +117,8 @@ function Game:draw()
 		local endx, endy = drystal.screen2scene(sw, sh)
 		local sprite = sprites.parquet
 		local ox, oy = x % sprite.w, y % sprite.h
-		for x = startx - sprite.w + ox, endx, sprite.w-2 do
-			for y = starty - sprite.h + oy, endy, sprite.h-2 do
+		for x = startx - sprite.w + ox, endx, sprite.w do
+			for y = starty - sprite.h + oy, endy, sprite.h do
 				drystal.draw_sprite(sprite, x, y)
 			end
 		end
