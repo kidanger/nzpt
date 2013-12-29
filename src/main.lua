@@ -29,7 +29,6 @@ function drystal.update(dt)
 end
 function drystal.draw()
 	state:draw()
-	drystal.flip()
 end
 
 function drystal.key_press(key)

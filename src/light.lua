@@ -311,18 +311,18 @@ function Light:draw()
 	end
 
 	if self.modified and not self.freed then
-		drystal.reset_buffer(self.buffer)
-		drystal.use_buffer(self.buffer)
+		self.buffer:reset()
+		self.buffer:use()
 		self:_draw()
 		drystal.use_buffer()
 		if self:is_fastbufferable() then
-			drystal.upload_and_free_buffer(self.buffer)
+			self.buffer:upload_and_free()
 			self.freed = true
 		end
 		self.modified = false
 	end
 
-	drystal.draw_buffer(self.buffer)
+	self.buffer:draw()
 end
 
 function Light:is_fastbufferable()
