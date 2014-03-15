@@ -22,7 +22,7 @@ Editor.__index = Editor
 function Editor.new(game)
 	local editor = setmetatable({}, Editor)
 	editor.game = game
-	editor.font = assert(tt.load('data/font.ttf', 22), "can't load data/font.ttf")
+	editor.font = assert(tt.load('data/font.ttf', 22))
 	editor.element = editor.elements[editor.element_num]
 
 	for _, e in ipairs(editor.elements) do
@@ -36,7 +36,7 @@ function Editor:draw()
 	drystal.set_color(0, 0, 0)
 
 	self.game:gui_camera()
-	local sw, sh = drystal.surface_size(drystal.screen)
+	local sw, sh = drystal.screen.w, drystal.screen.h
 	tt.use(self.font)
 	tt.draw(self.element.name, 3, sh - 26)
 

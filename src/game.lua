@@ -38,8 +38,8 @@ function Game.new()
 	local game = setmetatable({}, Game)
 
 	drystal.set_filter_mode(drystal.FILTER_NEAREST)
-	game.spritesheet = drystal.load_surface(sprites.image)
-	local sw, sh = drystal.surface_size(drystal.screen)
+	game.spritesheet = assert(drystal.load_surface(sprites.image))
+	local sw, sh = drystal.screen.w, drystal.screen.h
 	game.map_surface = drystal.new_surface(sw, sh)
 
 	game.editor = Editor.new(game)
@@ -84,7 +84,7 @@ function Game:update(dt)
 end
 
 function Game:draw()
-	local sw, sh = drystal.surface_size(drystal.screen)
+	local sw, sh = drystal.screen.w, drystal.screen.h
 	local map = self.map
 
 	drystal.set_blend_mode(drystal.BLEND_DEFAULT)
@@ -176,7 +176,7 @@ function Game:gui_camera()
 	drystal.camera.reset()
 end
 function Game:game_camera()
-	local sw, sh = drystal.surface_size(drystal.screen)
+	local sw, sh = drystal.screen.w, drystal.screen.h
 	local x, y = self.map.hero:get_screen_position()
 	x, y = sw / 2 - x, sh / 2 - y
 	drystal.camera.x, drystal.camera.y = x, y

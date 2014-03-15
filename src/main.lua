@@ -24,7 +24,6 @@ function drystal.init()
 end
 
 function drystal.update(dt)
-	dt = dt / 1000
 	state:update(dt)
 end
 function drystal.draw()

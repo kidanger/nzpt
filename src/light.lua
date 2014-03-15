@@ -47,7 +47,6 @@ end
 
 function Light:destroy()
 	if self.buffer then
-		drystal.free_buffer(self.buffer)
 		self.buffer = nil
 		self.remove_me = true
 	end
