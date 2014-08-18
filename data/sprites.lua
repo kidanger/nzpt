@@ -3,7 +3,7 @@ local sprites = {
 	balise={x=2,y=2,w=11,h=11},
 	lightmap={x=15,y=2,w=258,h=258},
 	ombre_null={x=275,y=2,w=32,h=32},
-	parquet={x=310,y=3,w=49,h=49},
+	parquet={x=309,y=2,w=52,h=52},
 	penumbra={x=363,y=2,w=258,h=258},
 	perso_d_1={x=623,y=2,w=32,h=24},
 	perso_d_2={x=657,y=2,w=32,h=24},

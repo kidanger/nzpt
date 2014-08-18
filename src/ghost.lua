@@ -1,5 +1,4 @@
 local drystal = require 'drystal'
-local physic = require 'physic'
 
 local sprites = require 'data/sprites'
 
@@ -32,9 +31,9 @@ function Ghost.new(x, y)
 end
 
 function Ghost:init()
-	local head_shape = physic.new_shape('circle', self.radius)
+	local head_shape = drystal.new_shape('circle', self.radius)
 
-	self.body = physic.new_body(true, head_shape)
+	self.body = drystal.new_body(true, head_shape)
 	self.body:set_position(self.x, self.y)
 
 	self.body:set_angular_damping(6)
@@ -73,7 +72,7 @@ function Ghost:update(dt)
 		local x, y = self:get_x(), self:get_y()
 		local tx, ty = self.map.hero:get_x(), self.map.hero:get_y()
 		if math.abs((x-tx)^2 + (y-ty)^2) < self.sight_radius then
-			local collides = physic.raycast(x, y, tx, ty, raycast_callback)
+			local collides = drystal.raycast(x, y, tx, ty, raycast_callback)
 			if collides == nil then
 				self.last_seen_timer = 6
 				self.last_seen = {x=tx, y=ty}

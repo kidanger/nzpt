@@ -1,0 +1,3 @@
+[submodule "lib/Jumper"]
+	path = lib/Jumper
+	url = git@github.com:Yonaba/Jumper.git

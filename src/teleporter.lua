@@ -1,5 +1,4 @@
 local drystal = require 'drystal'
-local physic = require 'physic'
 
 local Light = require 'src/light'
 local sprites = require 'data/sprites'

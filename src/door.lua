@@ -1,5 +1,4 @@
 local drystal = require 'drystal'
-local physic = require 'physic'
 
 local Door = {
 	game=nil,
@@ -29,17 +28,15 @@ end
 function Door:init()
 	local x, y = self.x + self.w/2, self.y + self.h/2
 
-	local shape = physic.new_shape('box', self.w, self.h)
-	self.body = physic.new_body(true, shape)
-	self.body:set_position(x, y)
+	local shape = drystal.new_shape('box', self.w, self.h, -self.w/2, -self.h/2)
+	self.body = drystal.new_body(true, x, y, shape)
 	self.body.parent = self
 
-	local shape2 = physic.new_shape('circle', self.small_radius)
-	self.body2 = physic.new_body(false, shape2)
-	self.body2:set_position(x, y)
+	local shape2 = drystal.new_shape('circle', self.small_radius)
+	self.body2 = drystal.new_body(false, x, y, shape2)
 	self.body2.parent = self
 
-	self.joint = physic.new_joint('revolute', self.body, self.body2,
+	self.joint = drystal.new_joint('revolute', self.body, self.body2,
 									-self.w/2, 0, 0, 0, false)
 	self.joint:set_angle_limits(0, math.pi*.6)
 	return self

@@ -1,5 +1,4 @@
 local drystal = require 'drystal'
-local physic = require 'physic'
 
 local Hero = require 'src/hero'
 local Wall = require 'src/wall'
@@ -22,8 +21,8 @@ local Game = {
 Game.__index = Game
 
 -- static initialisation
-physic.create_world(0, 0)
-physic.on_collision(
+drystal.init_physics(0, 0)
+drystal.on_collision(
 	function (b1, b2)
 		if b1.begin_collide then b1:begin_collide(b2) end
 		if b2.begin_collide then b2:begin_collide(b1) end
@@ -37,10 +36,10 @@ physic.on_collision(
 function Game.new()
 	local game = setmetatable({}, Game)
 
-	drystal.set_filter_mode(drystal.FILTER_NEAREST)
 	game.spritesheet = assert(drystal.load_surface(sprites.image))
+	game.spritesheet:set_filter(drystal.NEAREST)
 	local sw, sh = drystal.screen.w, drystal.screen.h
-	game.map_surface = drystal.new_surface(sw, sh)
+	game.map_surface = drystal.new_surface(sw, sh, true)
 
 	game.editor = Editor.new(game)
 
@@ -67,7 +66,7 @@ function Game:update(dt)
 		d:update(dt)
 	end
 
-	physic.update(dt)
+	drystal.update_physics(dt)
 
 	for i, l in ipairs(map.lights) do
 		if l.remove_me then
@@ -101,13 +100,13 @@ function Game:draw()
 	drystal.set_alpha(255)
 	drystal.set_color(0, 0, 0)
 
-	drystal.draw_from(self.spritesheet)
+	self.spritesheet:draw_from()
 	drystal.set_blend_mode(drystal.BLEND_ADD)
 	for _, l in ipairs(map.lights) do
 		l:draw()
 	end
 
-	drystal.draw_on(self.map_surface)
+	self.map_surface:draw_on()
 	drystal.set_blend_mode(drystal.BLEND_DEFAULT)
 	drystal.set_alpha(255)
 	drystal.set_color(255, 255, 255)
@@ -117,8 +116,8 @@ function Game:draw()
 		local endx, endy = drystal.screen2scene(sw, sh)
 		local sprite = sprites.parquet
 		local ox, oy = x % sprite.w, y % sprite.h
-		for x = startx - sprite.w + ox, endx, sprite.w do
-			for y = starty - sprite.h + oy, endy, sprite.h do
+		for x = startx - sprite.w + ox, endx, sprite.w-2 do
+			for y = starty - sprite.h + oy, endy, sprite.h-2 do
 				drystal.draw_sprite(sprite, x, y)
 			end
 		end
@@ -137,8 +136,8 @@ function Game:draw()
 	end
 
 	do -- blit map on screen (multiplied)
-		drystal.draw_on(drystal.screen)
-		drystal.draw_from(self.map_surface)
+		drystal.screen:draw_on()
+		self.map_surface:draw_from()
 		self:gui_camera()
 		drystal.set_blend_mode(drystal.BLEND_MULT)
 		drystal.set_alpha(255)
@@ -148,7 +147,7 @@ function Game:draw()
 	end
 
 	drystal.set_blend_mode(drystal.BLEND_DEFAULT)
-	drystal.draw_from(self.spritesheet)
+	self.spritesheet:draw_from()
 
 	if self.editor.activated then
 		self.editor:draw()

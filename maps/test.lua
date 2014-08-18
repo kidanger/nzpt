@@ -7,6 +7,7 @@ local Door = require 'src/door'
 local walls = {
 	Wall.new(12.6, 17, 5, 1),
 	Wall.new(12, 16, .6, 7),
+	Wall.new(17, 16, .6, 7),
 	Wall.new(9, 6, 5, 5),
 
 	Wall.new(0, 0, 35, 5),
@@ -33,12 +34,12 @@ local function load_into(map)
 	for _, d in ipairs(doors) do
 		map:add_door(d:init())
 	end
-	for _, l in ipairs(lights) do
-		map:add_light(l:init())
-	end
-	for _, g in ipairs(ghosts) do
-		map:add_ghost(g:init())
-	end
+	--for _, l in ipairs(lights) do
+		--map:add_light(l:init())
+	--end
+	--for _, g in ipairs(ghosts) do
+		--map:add_ghost(g:init())
+	--end
 end
 
 return {load_into=load_into}

@@ -1,5 +1,4 @@
 local drystal = require 'drystal'
-local physic = require 'physic'
 
 local Hero = require 'src/hero'
 
@@ -85,7 +84,7 @@ local function distance(x, y, x2, y2)
 	return math.sqrt((x2-x)^2 + (y2-y)^2)
 end
 function Map:remove_at(x, y, filter)
-	local objects = physic.query(x-0.1, y-0.1, x+0.1, y+0.1)
+	local objects = drystal.query(x-0.1, y-0.1, x+0.1, y+0.1)
 	for _, o in ipairs(objects) do
 		if filter(o.parent) then
 			self:remove(o.parent)

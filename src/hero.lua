@@ -1,5 +1,4 @@
 local drystal = require 'drystal'
-local physic = require 'physic'
 
 local Light = require 'src/light'
 local Teleporter = require 'src/teleporter'
@@ -46,12 +45,11 @@ function Hero.new()
 end
 
 function Hero:init(x, y)
-	local head_shape = physic.new_shape('circle', self.radius, .05, 0)
-	local shoulders_shape = physic.new_shape('box',
-			self.shoulders_width, self.shoulders_height, -.15, 0)
+	local head_shape = drystal.new_shape('circle', self.radius, .05, 0)
+	local shoulders_shape = drystal.new_shape('box',
+			self.shoulders_width, self.shoulders_height, -self.shoulders_width / 2 - .15, -self.shoulders_height / 2)
 
-	self.body = physic.new_body(true, head_shape, shoulders_shape)
-	self.body:set_position(x, y)
+	self.body = drystal.new_body(true, x, y, head_shape, shoulders_shape)
 
 	self.body:set_angular_damping(6)
 	self.body:set_linear_damping(15)
@@ -164,7 +162,7 @@ function Hero:get_y()
 	return y
 end
 function Hero:get_screen_position()
-	local x, y = self.body:get_position()
+	local x, y = self.body:get_center_position()
 	return x * R, y * R
 end
 

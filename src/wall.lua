@@ -1,5 +1,4 @@
 local drystal = require 'drystal'
-local physic = require 'physic'
 
 local Wall = {
 	name='wall',
@@ -30,9 +29,8 @@ function Wall.new(x, y, w, h)
 end
 
 function Wall:init()
-	local shape = physic.new_shape('box', self.w, self.h)
-	self.body = physic.new_body(false, shape)
-	self.body:set_position(self.x + self.w/2, self.y + self.h/2)
+	local shape = drystal.new_shape('box', self.w, self.h)
+	self.body = drystal.new_body(false, self.x, self.y, shape)
 	self.body.parent = self
 	return self
 end

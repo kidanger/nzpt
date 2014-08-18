@@ -1,5 +1,4 @@
 local drystal = require 'drystal'
-local physic = require 'physic'
 
 local sprites = require 'data/sprites'
 
@@ -106,7 +105,7 @@ function Light:old_draw()
 		local destx, desty =
 					self.x + self.radius * math.cos(angle),
 					self.y + self.radius * math.sin(angle)
-		local collides, x, y = physic.raycast(self.x, self.y, destx, desty, raycast_callback)
+		local collides, x, y = drystal.raycast(self.x, self.y, destx, desty, raycast_callback)
 		if collides then
 			destx = x
 			desty = y
@@ -135,7 +134,7 @@ function Light:old_draw()
 end
 
 function Light:new_draw()
-	local objects = physic.query(
+	local objects = drystal.query(
 		self.x - self.radius, self.y - self.radius,
 		self.x + self.radius, self.y + self.radius
 	)
@@ -148,7 +147,7 @@ function Light:new_draw()
 		addangle = addangle or 0
 		local destx = self.x + math.cos(p.angle + addangle) * self.radius
 		local desty = self.y + math.sin(p.angle + addangle) * self.radius
-		local collides, colx, coly = physic.raycast(self.x, self.y,
+		local collides, colx, coly = drystal.raycast(self.x, self.y,
 									destx, desty, raycast_callback)
 		local x, y = colx or destx, coly or desty
 		local distance = distanceto(x, y) / self.radius
@@ -165,7 +164,7 @@ function Light:new_draw()
 		local parent = o.parent
 		if parent.is_wall then
 			for i, vertex in ipairs(parent.vertices) do
-				local collides, colx, coly = physic.raycast(self.x, self.y,
+				local collides, colx, coly = drystal.raycast(self.x, self.y,
 							vertex.x, vertex.y, raycast_callback)
 				local x, y = colx or vertex.x, coly or vertex.y
 
@@ -313,7 +312,7 @@ function Light:draw()
 		self.buffer:reset()
 		self.buffer:use()
 		self:_draw()
-		drystal.use_buffer()
+		drystal.use_default_buffer()
 		if self:is_fastbufferable() then
 			self.buffer:upload_and_free()
 			self.freed = true

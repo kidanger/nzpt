@@ -1,5 +1,4 @@
 local drystal = require 'drystal'
-local tt = require 'truetype'
 
 local WallElement = require 'src/editor/wall_element'
 local LightElement = require 'src/editor/light_element'
@@ -22,7 +21,7 @@ Editor.__index = Editor
 function Editor.new(game)
 	local editor = setmetatable({}, Editor)
 	editor.game = game
-	editor.font = assert(tt.load('data/font.ttf', 22))
+	editor.font = assert(drystal.load_font('data/font.ttf', 22))
 	editor.element = editor.elements[editor.element_num]
 
 	for _, e in ipairs(editor.elements) do
@@ -37,8 +36,7 @@ function Editor:draw()
 
 	self.game:gui_camera()
 	local sw, sh = drystal.screen.w, drystal.screen.h
-	tt.use(self.font)
-	tt.draw(self.element.name, 3, sh - 26)
+	self.font:draw(self.element.name, 3, sh - 26)
 
 	self.game:game_camera()
 	drystal.set_color(150, 0, 0)
