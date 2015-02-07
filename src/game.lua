@@ -37,7 +37,7 @@ function Game.new()
 	local game = setmetatable({}, Game)
 
 	game.spritesheet = assert(drystal.load_surface(sprites.image))
-	game.spritesheet:set_filter(drystal.NEAREST)
+	game.spritesheet:set_filter(drystal.filters.nearest)
 	local sw, sh = drystal.screen.w, drystal.screen.h
 	game.map_surface = drystal.new_surface(sw, sh, true)
 
@@ -86,7 +86,7 @@ function Game:draw()
 	local sw, sh = drystal.screen.w, drystal.screen.h
 	local map = self.map
 
-	drystal.set_blend_mode(drystal.BLEND_DEFAULT)
+	drystal.set_blend_mode(drystal.blends.default)
 	drystal.set_alpha(255)
 	if self.show_darkness then
 		drystal.set_color(0, 0, 0)
@@ -101,13 +101,13 @@ function Game:draw()
 	drystal.set_color(0, 0, 0)
 
 	self.spritesheet:draw_from()
-	drystal.set_blend_mode(drystal.BLEND_ADD)
+	drystal.set_blend_mode(drystal.blends.add)
 	for _, l in ipairs(map.lights) do
 		l:draw()
 	end
 
 	self.map_surface:draw_on()
-	drystal.set_blend_mode(drystal.BLEND_DEFAULT)
+	drystal.set_blend_mode(drystal.blends.default)
 	drystal.set_alpha(255)
 	drystal.set_color(255, 255, 255)
 	do
@@ -139,14 +139,14 @@ function Game:draw()
 		drystal.screen:draw_on()
 		self.map_surface:draw_from()
 		self:gui_camera()
-		drystal.set_blend_mode(drystal.BLEND_MULT)
+		drystal.set_blend_mode(drystal.blends.mult)
 		drystal.set_alpha(255)
 		drystal.set_color(255, 255, 255)
 		local spmap = {x=0, y=0, w=sw, h=sh}
 		drystal.draw_sprite(spmap, 0, 0)
 	end
 
-	drystal.set_blend_mode(drystal.BLEND_DEFAULT)
+	drystal.set_blend_mode(drystal.blends.default)
 	self.spritesheet:draw_from()
 
 	if self.editor.activated then
