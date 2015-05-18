@@ -21,19 +21,20 @@ local Game = {
 Game.__index = Game
 
 -- static initialisation
-drystal.init_physics(0, 0)
-drystal.on_collision(
-	function (b1, b2)
-		if b1.begin_collide then b1:begin_collide(b2) end
-		if b2.begin_collide then b2:begin_collide(b1) end
-	end,
-	function (b1, b2)
-		if b1.end_collide then b1:end_collide(b2) end
-		if b2.end_collide then b2:end_collide(b1) end
-	end
-)
-
 function Game.new()
+
+	drystal.init_physics(0, 0)
+	drystal.on_collision(
+		function (b1, b2)
+			if b1.begin_collide then b1:begin_collide(b2) end
+			if b2.begin_collide then b2:begin_collide(b1) end
+		end,
+		function (b1, b2)
+			if b1.end_collide then b1:end_collide(b2) end
+			if b2.end_collide then b2:end_collide(b1) end
+		end
+		)
+
 	local game = setmetatable({}, Game)
 
 	game.spritesheet = assert(drystal.load_surface(sprites.image))
@@ -42,7 +43,6 @@ function Game.new()
 	game.map_surface = drystal.new_surface(sw, sh, true)
 
 	game.editor = Editor.new(game)
-
 	return game
 end
 
@@ -116,8 +116,8 @@ function Game:draw()
 		local endx, endy = drystal.screen2scene(sw, sh)
 		local sprite = sprites.parquet
 		local ox, oy = x % sprite.w, y % sprite.h
-		for x = startx - sprite.w + ox, endx, sprite.w-2 do
-			for y = starty - sprite.h + oy, endy, sprite.h-2 do
+		for x = startx - sprite.w - ox, endx, sprite.w-2 do
+			for y = starty - sprite.h - oy, endy, sprite.h-2 do
 				drystal.draw_sprite(sprite, x, y)
 			end
 		end
@@ -177,7 +177,7 @@ end
 function Game:game_camera()
 	local sw, sh = drystal.screen.w, drystal.screen.h
 	local x, y = self.map.hero:get_screen_position()
-	x, y = sw / 2 - x, sh / 2 - y
+	x, y = x - sw / 2, y - sh / 2
 	drystal.camera.x, drystal.camera.y = x, y
 	drystal.camera.zoom = self.zoom
 end

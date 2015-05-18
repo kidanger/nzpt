@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
 import math
-import Image
+from PIL import Image
 
 img = Image.new('RGBA', (256, 256))
 
